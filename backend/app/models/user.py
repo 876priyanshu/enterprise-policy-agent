@@ -1,8 +1,11 @@
-# backend/app/models/user.py
 from sqlalchemy import Column, Integer, String, Boolean, DateTime
 from sqlalchemy.sql import func
-from app.database import Base
+from app.core.database import Base
+# Add this import at the top if you don't have it
+from sqlalchemy.orm import relationship
 
+# Inside your User class, add this line:
+policies = relationship("Policy", back_populates="owner")
 class User(Base):
     __tablename__ = "users"
 
