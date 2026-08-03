@@ -1,27 +1,29 @@
+# backend/app/main.py
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.database import engine, Base
+from app.routes import auth
 
-# Initialize the FastAPI application (Similar to `const app = express()`)
+# Create the database tables
+# This looks at all models imported and generates the SQL tables if they don't exist
+Base.metadata.create_all(bind=engine)
+
 app = FastAPI(
     title="Enterprise Policy Agent API",
-    description="Backend for querying enterprise policies using RAG and Grok",
     version="1.0.0"
 )
 
-# CORS Configuration (Similar to `app.use(cors())` in Express)
-# This allows our React frontend to communicate with this backend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, this should be your frontend's specific URL
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all HTTP methods (GET, POST, PUT, DELETE)
-    allow_headers=["*"],  # Allows all headers (including Authorization for JWT)
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
-# A simple health-check route
+# Mount the auth routes
+app.include_router(auth.router, prefix="/auth", tags=["Authentication"])
+
 @app.get("/")
 def health_check():
-    return {
-        "status": "success",
-        "message": "Enterprise Policy Agent API is running!"
-    }
+    return {"status": "success", "message": "Enterprise Policy Agent API is running!"}
