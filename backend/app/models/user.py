@@ -21,7 +21,7 @@ class User(Base):
     
     # Account Status
     is_active = Column(Boolean, default=True)
-    
+    policies = relationship("Policy", back_populates="user", cascade="all, delete-orphan")
     # Timestamps (Equivalent to Mongoose { timestamps: true })
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())

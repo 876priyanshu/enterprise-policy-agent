@@ -1,6 +1,6 @@
-# ==========================================
+
 # Python & Virtual Environments
-# ==========================================
+
 .venv/
 venv/
 ENV/
@@ -10,25 +10,25 @@ __pycache__/
 *$py.class
 *.so
 
-# ==========================================
+
 # Environment Variables & Secrets
-# ==========================================
+
 .env
 .env.*
 !.env.example
 *.pem
 *.key
 
-# ==========================================
+
 # Database & Local Storage
-# ==========================================
+
 *.db
 *.sqlite
 *.sqlite3
 
-# ==========================================
+
 # RAG Artifacts (ChromaDB & File Uploads)
-# ==========================================
+
 chroma/
 chroma_db/
 .chromadb/
@@ -36,9 +36,7 @@ uploads/
 temp_files/
 *.pdf
 
-# ==========================================
-# IDEs & Editor Configuration
-# ==========================================
+
 .vscode/
 .idea/
 *.swp
@@ -46,9 +44,6 @@ temp_files/
 *.sublime-project
 *.sublime-workspace
 
-# ==========================================
-# Caches, Testing & Logs
-# ==========================================
 .pytest_cache/
 .coverage
 htmlcov/
@@ -56,9 +51,6 @@ htmlcov/
 .ruff_cache/
 *.log
 
-# ==========================================
-# Operating System Files
-# ==========================================
 .DS_Store
 Thumbs.db
 ehthumbs.db

@@ -52,7 +52,7 @@ class PolicyResponse(BaseModel):
     # This tells Pydantic to read standard object attributes (not just dictionaries)
     model_config = {"from_attributes": True}
 @router.post("/generate")
-async def generate_policy(request: PolicyRequest, current_user: User = Depends(get_current_user)):
+async def handle_policy_generation(request: PolicyRequest, current_user: User = Depends(get_current_user)):
     headers = {
         "Authorization": f"Bearer {settings.groq_api_key}",
         "Content-Type": "application/json"
