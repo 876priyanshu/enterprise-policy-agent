@@ -8,8 +8,10 @@ class Settings(BaseSettings):
     db_name: str
     database_url: str
     secret_key: str
-    groq_api_key: str  # Renamed from grok to groq
-    
+    groq_api_key: str 
+    TAVILY_API_KEY: str
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
+    # class Config:
+    #     env_file = ".env"
 
 settings = Settings()
