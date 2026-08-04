@@ -9,6 +9,7 @@ from app.core.database import get_db  # Adjust if your dependency is located els
 from app.models.policy import Policy
 from datetime import datetime
 from typing import List
+
 from typing import Optional
 from typing import Literal
 from fastapi import Query
@@ -51,92 +52,92 @@ class PolicyResponse(BaseModel):
 
     # This tells Pydantic to read standard object attributes (not just dictionaries)
     model_config = {"from_attributes": True}
-@router.post("/generate")
-async def handle_policy_generation(request: PolicyRequest, current_user: User = Depends(get_current_user)):
-    headers = {
-        "Authorization": f"Bearer {settings.groq_api_key}",
-        "Content-Type": "application/json"
-    }
+# @router.post("/generate")
+# async def handle_policy_generation(request: PolicyRequest, current_user: User = Depends(get_current_user)):
+#     headers = {
+#         "Authorization": f"Bearer {settings.groq_api_key}",
+#         "Content-Type": "application/json"
+#     }
     
-    payload = {
-        "model": "openai/gpt-oss-120b",  # The current recommended open model on Groq
-        "messages": [
-            {"role": "system", "content": "You are an Enterprise Security Policy AI. Output strictly professional, formatted policy text."},
-            {"role": "user", "content": request.prompt}
-        ]
-    }
+#     payload = {
+#         "model": "openai/gpt-oss-120b",  # The current recommended open model on Groq
+#         "messages": [
+#             {"role": "system", "content": "You are an Enterprise Security Policy AI. Output strictly professional, formatted policy text."},
+#             {"role": "user", "content": request.prompt}
+#         ]
+#     }
     
-    async with httpx.AsyncClient() as client:
-        try:
-            # Pointing to GroqCloud's OpenAI-compatible endpoint
-            response = await client.post(
-                "https://api.groq.com/openai/v1/chat/completions",
-                headers=headers,
-                json=payload,
-                timeout=45.0 
-            )
+#     async with httpx.AsyncClient() as client:
+#         try:
+#             # Pointing to GroqCloud's OpenAI-compatible endpoint
+#             response = await client.post(
+#                 "https://api.groq.com/openai/v1/chat/completions",
+#                 headers=headers,
+#                 json=payload,
+#                 timeout=45.0 
+#             )
             
-            response.raise_for_status() 
+#             response.raise_for_status() 
             
-            data = response.json()
-            policy_text = data["choices"][0]["message"]["content"]
+#             data = response.json()
+#             policy_text = data["choices"][0]["message"]["content"]
             
-            return {"status": "success", "policy": policy_text}
+#             return {"status": "success", "policy": policy_text}
             
-        except httpx.HTTPStatusError as e:
-            print(f"Groq API Error: {e.response.text}") 
-            raise HTTPException(
-                status_code=e.response.status_code, 
-                detail="Failed to generate policy from AI provider."
-            )
+#         except httpx.HTTPStatusError as e:
+#             print(f"Groq API Error: {e.response.text}") 
+#             raise HTTPException(
+#                 status_code=e.response.status_code, 
+#                 detail="Failed to generate policy from AI provider."
+#             )
 
-@router.post("/generate")
-async def generate_policy(
-    request: PolicyRequest, 
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)  # <-- Inject the database session
-):
-    # ... [Keep your existing Groq API setup and httpx call exactly as is] ...
+# @router.post("/generate")
+# async def generate_policy(
+#     request: PolicyRequest, 
+#     current_user: User = Depends(get_current_user),
+#     db: Session = Depends(get_db)  # <-- Inject the database session
+# ):
+#     # ... [Keep your existing Groq API setup and httpx call exactly as is] ...
     
-    async with httpx.AsyncClient() as client:
-        try:
-            response = await client.post(...)
-            response.raise_for_status() 
+#     async with httpx.AsyncClient() as client:
+#         try:
+#             response = await client.post(...)
+#             response.raise_for_status() 
             
-            data = response.json()
-            policy_text = data["choices"][0]["message"]["content"]
+#             data = response.json()
+#             policy_text = data["choices"][0]["message"]["content"]
             
-            # --- NEW DATABASE LOGIC ---
+#             # --- NEW DATABASE LOGIC ---
             
-            # 1. Instantiate the Python object 
-            new_policy = Policy(
-                title=request.title,
-                content=policy_text,
-                user_id=current_user.id
-            )
+#             # 1. Instantiate the Python object 
+#             new_policy = Policy(
+#                 title=request.title,
+#                 content=policy_text,
+#                 user_id=current_user.id
+#             )
             
-            # 2. Stage the object in the current transaction
-            db.add(new_policy)
+#             # 2. Stage the object in the current transaction
+#             db.add(new_policy)
             
-            # 3. Flush the transaction to MySQL
-            db.commit()
+#             # 3. Flush the transaction to MySQL
+#             db.commit()
             
-            # 4. Refresh the object to get the auto-generated ID and timestamps
-            db.refresh(new_policy)
+#             # 4. Refresh the object to get the auto-generated ID and timestamps
+#             db.refresh(new_policy)
             
-            return {
-                "status": "success", 
-                "policy_id": new_policy.id,
-                "title": new_policy.title,
-                "policy": new_policy.content
-            }
+#             return {
+#                 "status": "success", 
+#                 "policy_id": new_policy.id,
+#                 "title": new_policy.title,
+#                 "policy": new_policy.content
+#             }
             
-        except httpx.HTTPStatusError as e:
-            print(f"Groq API Error: {e.response.text}") 
-            raise HTTPException(
-                status_code=e.response.status_code, 
-                detail="Failed to generate policy from AI provider."
-            )
+#         except httpx.HTTPStatusError as e:
+#             print(f"Groq API Error: {e.response.text}") 
+#             raise HTTPException(
+#                 status_code=e.response.status_code, 
+#                 detail="Failed to generate policy from AI provider."
+#             )
 
 @router.get("/", response_model=list[PolicyResponse])
 async def get_user_policies(
@@ -224,7 +225,7 @@ async def delete_policy(
 
 
 @router.post("/generate", response_model=PolicyResponse)
-@limiter.limit("5/minute")  # Returns 429 Too Many Requests if exceeded
+@limiter.limit("5/minute")  # Returns 429 Too Many Reuests if exceeded
 async def generate_policy(
     request: Request, # Required by slowapi
     policy_req: PolicyGenerateRequest,
