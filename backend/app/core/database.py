@@ -2,9 +2,12 @@ import os
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from dotenv import load_dotenv
+import chromadb
+from loguru import logger
 
 # Load environment variables from a .env file
 load_dotenv()
+
 
 # 1. Database URL Construction
 # Format: mysql+pymysql://<username>:<password>@<host>:<port>/<database_name>

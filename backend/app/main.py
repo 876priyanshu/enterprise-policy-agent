@@ -1,15 +1,15 @@
-# backend/app/main.py
-from fastapi import FastAPI
+import time
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
-from prometheus_fastapi_instrumentator import Instrumentator
-from app.core.database import engine, Base
-# 1. ADD 'query' TO YOUR IMPORTS HERE
-from app.routes import auth, policy, document, query 
-from app.limiter import limiter
-from app.core.logger import setup_logging
 from loguru import logger
+from prometheus_fastapi_instrumentator import Instrumentator
+
+from app.core.database import engine, Base
+from app.core.logger import setup_logging
+from app.routes import auth, policy, document, query
+from app.limiter import limiter
 
 
 Base.metadata.create_all(bind=engine)
