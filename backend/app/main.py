@@ -10,11 +10,35 @@ from app.core.database import engine, Base
 from app.core.logger import setup_logging
 from app.routes import auth, policy, document, query
 from app.limiter import limiter
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 
 
 Base.metadata.create_all(bind=engine)
 
+
+
 app = FastAPI()
+
+# Allow your local Vite development server
+origins = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"], # Allows POST, GET, OPTIONS, etc.
+    allow_headers=["*"], # Allows all headers
+)
+
+# ... your existing endpoints ...
+
+
+
 
 
 
