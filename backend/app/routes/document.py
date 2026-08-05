@@ -1,21 +1,20 @@
 import uuid
 import PyPDF2
-from fastapi import APIRouter, UploadFile, File, HTTPException, status
+from fastapi import APIRouter, UploadFile, File, HTTPException, status, Request, Depends
 import chromadb
+from loguru import logger
 from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 import os
 from app.services.security import get_current_user
 from pydantic import BaseModel
 from openai import OpenAI
 from typing import List, Optional
-from typing import Optional
 from sqlalchemy.orm import Session
-from fastapi import Depends
+
 # Assuming you have a dependency that yields a DB session:
 from app.core.database import get_db 
 from app.crud.chat import get_or_create_conversation, add_message, get_conversation_history
 from app.limiter import limiter
-from fastapi import Request, Depends
 
 # Initialize Groq via the OpenAI SDK
 groq_client = OpenAI(
@@ -23,36 +22,40 @@ groq_client = OpenAI(
     base_url="https://api.groq.com/openai/v1"
 )
 
-
+# 1. Fetch environment variables with local fallbacks
+CHROMA_HOST = os.getenv("CHROMA_HOST", "localhost")
+CHROMA_PORT = os.getenv("CHROMA_PORT", "8000")
 
 class ChatMessage(BaseModel):
     role: str  # 'user' or 'assistant'
     content: str
-
 
 class QueryRequest(BaseModel):
     question: str
     n_results: int = 3
     conversation_id: Optional[str] = None
 
+# 2. Initialize the HTTP Client
+try:
+    chroma_client = chromadb.HttpClient(
+        host=CHROMA_HOST,
+        port=CHROMA_PORT
+    )
+    logger.info(f"Successfully connected to ChromaDB at {CHROMA_HOST}:{CHROMA_PORT}")
+except Exception as e:
+    logger.error(f"Failed to connect to ChromaDB at {CHROMA_HOST}:{CHROMA_PORT}. Error: {e}")
+    raise e
 
-
-
-# 1. Initialize Vector Database (Saved locally to ./chroma_db)
-chroma_client = chromadb.PersistentClient(path="./chroma_db")
-
-# 2. Setup the local embedding model (Downloads automatically on first run)
+# 3. Setup the local embedding model (Downloads automatically on first run)
 embedding_fn = SentenceTransformerEmbeddingFunction(model_name="all-MiniLM-L6-v2")
 
-# 3. Create or load the collection
+# 4. Create or load the collection (UNCOMMENTED)
 collection = chroma_client.get_or_create_collection(
     name="enterprise_policies",
     embedding_function=embedding_fn
 )
 
 router = APIRouter()
-
-
 
 @router.post("/upload")
 async def upload_document(file: UploadFile = File(...)):
@@ -115,14 +118,13 @@ def chunk_text(text: str, chunk_size: int = 1000, overlap: int = 200) -> list[st
         
     return chunks
 
-
 @router.post("/query")
 @limiter.limit("5/minute")
 async def query_documents(
     request: Request,
     payload: QueryRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)  # <-- 1. Require Auth
+    current_user: dict = Depends(get_current_user)  # <-- Require Auth
 ):
     # 1. Manage Conversation State
     conv_id = get_or_create_conversation(
@@ -189,4 +191,3 @@ async def query_documents(
             status_code=500,
             detail=f"LLM Generation failed: {str(e)}"
         )
-
