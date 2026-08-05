@@ -1,13 +1,26 @@
 import logging
 import json
+import time
 from fastapi import APIRouter, Request, Depends
 from app.services.tools import agent_tools
 from app.services.web_search import perform_web_search
 from app.services.rag import search_internal_docs
 from app.routes.document import QueryRequest, groq_client
 from app.services.security import get_current_user  # Corrected import
+from loguru import logger # <-- Swap standard logging for loguru
+from openai import APIError, APITimeoutError # <-- Import OpenAI exceptions for Groq
+from fastapi import HTTPException
+from prometheus_client import Counter
+from app.services.tools import agent_tools
 
 router = APIRouter()
+
+LLM_TOKEN_COUNTER = Counter(
+    "agent_llm_tokens_total",
+    "Total tokens consumed by the Groq LLM",
+    ["token_type"] # Label to split by prompt vs. completion
+)
+
 logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = """
@@ -32,64 +45,55 @@ async def query_agent(
     messages.append({"role": "user", "content": payload.question})
     
     source_used = "none"
-    max_iterations = 3  # Safety breaker to prevent infinite loops
+    max_iterations = 3
     current_iteration = 0
     answer = ""
     
-    while current_iteration < max_iterations:
-        # 1. Call the LLM
-        response = groq_client.chat.completions.create(
-            model="llama-3.1-8b-instant",
-            messages=messages,
-            tools=agent_tools,
-            tool_choice="auto"
+    # Contextualize all logs in this function with the user's ID
+    with logger.contextualize(user_id=current_user.id):
+        logger.info(f"Starting agent execution for question: '{payload.question}'")
+
+        while current_iteration < max_iterations:
+            llm_start_time = time.time()
+            try:
+                # 1. Call the LLM
+                response = groq_client.chat.completions.create(
+                    model="llama-3.1-8b-instant",
+                    messages=messages,
+                    tools=agent_tools,
+                    tool_choice="auto"
+                )
+                if response.usage:
+                    logger.info(
+                            f"Iteration {current_iteration} Tokens | "
+                            f"Prompt: {response.usage.prompt_tokens} | "
+                            f"Completion: {response.usage.completion_tokens} | "
+                            f"Total: {response.usage.total_tokens}"
+                        )
+                    
+                LLM_TOKEN_COUNTER.labels(token_type="prompt").inc(response.usage.prompt_tokens)
+                LLM_TOKEN_COUNTER.labels(token_type="completion").inc(response.usage.completion_tokens)
+    
+
+                llm_latency = time.time() - llm_start_time
+                logger.debug(f"Groq LLM call succeeded in {llm_latency:.4f}s (Iteration {current_iteration})")
+
+            except APITimeoutError as e:
+                logger.error(f"Groq API timed out after {time.time() - llm_start_time:.4f}s")
+                raise HTTPException(status_code=504, detail="AI generation timed out.")
+            except APIError as e:
+                logger.exception(f"Groq API Error: {e.message}")
+                raise HTTPException(status_code=502, detail="Upstream AI provider error.")
+
+            message = response.choices[0].message
+            
+            # ... [Keep your existing tool routing logic exactly the same] ...
+            
+        # ... [Keep your existing fallback logic] ...
+
+        logger.info(
+            f"Agent finished | Source: {source_used} | "
+            f"Iterations: {current_iteration}"
         )
-        
-        message = response.choices[0].message
-        
-        # 2. Check if the LLM is done searching
-        if not message.tool_calls:
-            # No tools called? The LLM has formulated its final answer.
-            answer = message.content
-            break
-            
-        # 3. If tools were called, execute them
-        messages.append(message) # Append the LLM's tool call intent to history
-        
-        for tool_call in message.tool_calls:
-            function_name = tool_call.function.name
-            args = json.loads(tool_call.function.arguments)
-            tool_result = ""
-            
-            # ROUTE: Internal Search
-            if function_name == "search_policy_docs":
-                tool_result = search_internal_docs(args.get("query"))
-                if "NO_RESULTS" not in tool_result:
-                    source_used = "internal_docs"
-            
-            # ROUTE: Web Search
-            elif function_name == "web_search":
-                tool_result = await perform_web_search(args.get("query"))
-                source_used = "web_search"
-                
-            # Append the tool's actual output back into the message history
-            messages.append({
-                "role": "tool",
-                "tool_call_id": tool_call.id,
-                "name": function_name,
-                "content": tool_result
-            })
-            
-        current_iteration += 1
 
-    # 4. Fallback if the loop maxes out
-    if current_iteration >= max_iterations and not answer:
-        answer = "I'm sorry, I couldn't find a conclusive answer after multiple searches."
-
-    # 5. Log and return
-    logger.info(
-        f"Query processed | User: {current_user.id} | "
-        f"Source: {source_used} | Iterations: {current_iteration}"
-    )
-
-    return {"answer": answer, "source": source_used}
+        return {"answer": answer, "source": source_used}
