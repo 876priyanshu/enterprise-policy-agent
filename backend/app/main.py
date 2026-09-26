@@ -35,12 +35,6 @@ app.add_middleware(
     allow_headers=["*"], # Allows all headers
 )
 
-# ... your existing endpoints ...
-
-
-
-
-
 
 # This automatically tracks HTTP request metrics and exposes /metrics
 Instrumentator().instrument(app).expose(app, include_in_schema=False)
@@ -78,7 +72,6 @@ app.add_middleware(
 # Routers
 app.include_router(auth.router)
 
-# 2. ADD THE QUERY ROUTER HERE (Make sure it is ABOVE policy.router)
 app.include_router(query.router, prefix="/api/policy", tags=["Agent"])
 
 app.include_router(policy.router, prefix="/api/policy", tags=["Policy"])
