@@ -5,7 +5,7 @@ from app.core.config import settings
 from app.services.security import get_current_user
 from app.models.user import User
 from sqlalchemy.orm import Session
-from app.core.database import get_db  # Adjust if your dependency is located elsewhere
+from app.core.database import get_db 
 from app.models.policy import Policy
 from datetime import datetime
 from typing import List
