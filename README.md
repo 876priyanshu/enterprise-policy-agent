@@ -276,3 +276,109 @@ All required services should show a running or healthy state.
 If a container has stopped, inspect its logs:
 
 docker-compose logs <service-name>
+
+
+Application Data Flow
+                    ┌──────────────────┐
+                    │    React UI      │
+                    └────────┬─────────┘
+                             │
+                             │ HTTP
+                             ▼
+                    ┌──────────────────┐
+                    │     FastAPI      │
+                    │       API        │
+                    └────────┬─────────┘
+                             │
+               ┌─────────────┴─────────────┐
+               │                           │
+               ▼                           ▼
+        ┌──────────────┐           ┌────────────────┐
+        │    MySQL     │           │ Shared Volume  │
+        │  Metadata    │           │   PDF Files    │
+        └──────────────┘           └───────┬────────┘
+                                           │
+                                           ▼
+                                  ┌─────────────────┐
+                                  │      Kafka      │
+                                  │ indexing_task   │
+                                  └────────┬────────┘
+                                           │
+                                           ▼
+                                  ┌─────────────────┐
+                                  │     Worker      │
+                                  │ PDF + Embedding │
+                                  └────────┬────────┘
+                                           │
+                                           ▼
+                                  ┌─────────────────┐
+                                  │    ChromaDB     │
+                                  │  Vector Store   │
+                                  └────────┬────────┘
+                                           │
+                                           │ Query
+                                           ▼
+                                  ┌─────────────────┐
+                                  │   Groq LLM API  │
+                                  └────────┬────────┘
+                                           │
+                                           ▼
+                                  ┌─────────────────┐
+                                  │  Final Answer   │
+                                  └─────────────────┘
+
+Security Considerations
+Before deploying this application to production, consider implementing the following:
+
+Store secrets using a secure secrets manager.
+
+Never commit .env files to Git.
+
+Add authentication and authorization to API endpoints.
+
+Validate uploaded PDF files and enforce size limits.
+
+Restrict document access based on user permissions.
+
+Apply rate limiting to public-facing APIs.
+
+Configure CORS appropriately.
+
+Use HTTPS in production.
+
+Secure Kafka and MySQL credentials.
+
+Keep Docker images and Python/Node dependencies updated.
+
+Scalability
+The architecture allows individual components to scale independently.
+
+For example, additional workers can consume Kafka events as document-processing workloads increase:
+
+             ┌─────────────┐
+             │   FastAPI   │
+             └──────┬──────┘
+                    │
+          ┌─────────┴─────────┐
+          │                   │
+          ▼                   ▼
+   ┌─────────────┐     ┌─────────────┐
+   │   Worker 1  │     │   Worker 2  │
+   └──────┬──────┘     └──────┬──────┘
+          │                   │
+          └─────────┬─────────┘
+                    ▼
+               ┌─────────┐
+               │  Kafka  │
+               └─────────┘
+
+This allows document processing capacity to grow independently from the API layer.
+
+Development
+For local development, FastAPI provides an interactive Swagger interface:
+
+http://localhost:8000/docs
+
+An alternative ReDoc interface is available at:
+
+http://localhost:8000/redoc
