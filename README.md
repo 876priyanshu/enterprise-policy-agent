@@ -126,3 +126,153 @@ MYSQL_ROOT_PASSWORD=rootpassword
 MYSQL_DATABASE=policy_db
 MYSQL_USER=user
 MYSQL_PASSWORD=password
+
+3. Build & Deploy
+Launch the complete application stack in detached mode:
+
+docker-compose up -d --build
+
+The initial build may take several minutes because the backend image needs to download Python dependencies, including PyTorch.
+
+For subsequent launches:
+
+docker-compose up -d
+
+Check running containers:
+
+docker-compose ps
+
+View logs:
+
+docker-compose logs -f
+
+API Endpoints Reference
+Once the application is running, the interactive Swagger UI is available at:
+
+http://localhost:8000/docs
+
+Documents
+Method	Endpoint	Description
+POST	/api/documents/upload	Upload a PDF, save metadata to SQL, and trigger Kafka indexing
+GET	/api/documents/	Fetch indexed documents, optionally filtered by department
+
+Policy & Querying
+Method	Endpoint	Description
+POST	/api/query	Ask a question against the RAG knowledge base
+POST	/api/policies/generate	Generate a new policy document based on seed inputs
+
+Data Persistence & Volumes
+The application uses Docker volumes to ensure data persists between container restarts.
+
+Volume	Purpose
+mysql_data	Stores user profiles, document metadata, and SQL records
+shared_docs	Stores raw PDF files shared between the API and Worker
+chroma_data	Stores ChromaDB vector data
+
+Persistent Storage
+Persistent volumes prevent data loss when containers are restarted or recreated.
+
+The following data is persisted:
+
+Uploaded documents
+
+Database records
+
+Document metadata
+
+Generated embeddings
+
+ChromaDB indexes
+
+Reset Everything
+To stop the containers and remove all Docker volumes:
+
+docker-compose down -v
+
+Warning: This permanently removes the persisted MySQL, document, and ChromaDB data.
+
+After resetting, rebuild and start the application:
+
+docker-compose up -d --build
+
+Troubleshooting
+1. Port 3306 Conflict — MySQL
+If Docker fails to start the database service because port 3306 is already in use, you may have a local MySQL instance running.
+
+The Docker Compose configuration exposes MySQL externally on port 3307:
+
+ports:
+  - "3307:3306"
+
+This means:
+
+Host machine: 3307
+       │
+       ▼
+Container:   3306
+
+You can keep your local MySQL instance running while the Dockerized MySQL database uses port 3307.
+
+2. Docker Build Taking Too Long
+Make sure .dockerignore files exist in both the backend/ and frontend/ directories.
+
+Backend .dockerignore
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.git/
+.env
+
+Frontend .dockerignore
+node_modules/
+dist/
+.git/
+.env
+
+This prevents Docker from copying unnecessary files such as:
+
+Python virtual environments
+
+Python cache files
+
+node_modules
+
+Build output
+
+Git metadata
+
+3. Database Connection Refused
+Inside Docker Compose, services should communicate using their service names, not localhost.
+
+Incorrect
+mysql+pymysql://user:password@localhost:3306/policy_db
+
+Correct
+mysql+pymysql://user:password@db:3306/policy_db
+
+Here, db refers to the MySQL service defined in docker-compose.yml.
+
+4. Check Backend Logs
+If the API or worker is not behaving correctly, inspect the container logs:
+
+docker-compose logs -f backend
+
+If the worker is a separate service:
+
+docker-compose logs -f worker
+
+To inspect all services:
+
+docker-compose logs -f
+
+5. Verify Container Status
+Run:
+
+docker-compose ps
+
+All required services should show a running or healthy state.
+
+If a container has stopped, inspect its logs:
+
+docker-compose logs <service-name>
