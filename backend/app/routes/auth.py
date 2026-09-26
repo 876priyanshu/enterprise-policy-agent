@@ -56,7 +56,6 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    print("\n--- DEBUG LOGIN PROCESS ---")
     print(f"1. Login attempt for email: '{form_data.username}'")
     
     user = db.query(User).filter(User.email == form_data.username).first()
@@ -70,9 +69,7 @@ async def login(
         # Test the cryptographic comparison manually
         is_valid = verify_password(form_data.password, user.hashed_password)
         print(f"4. Cryptographic match result: {is_valid}")
-    print("---------------------------\n")
 
-    # Original logic continues...
     if not user or not verify_password(form_data.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
