@@ -21,7 +21,7 @@ import openai  # Groq SDK uses standard OpenAI client exceptions under the hood
 from fastapi import APIRouter, Depends, HTTPException, status
 import os
 
-# 1. Initialize the Groq client using the OpenAI SDK
+#  Initialize the Groq client using the OpenAI SDK
 groq_client = openai.OpenAI(
     api_key=os.environ.get("GROQ_API_KEY"),
     base_url="https://api.groq.com/openai/v1"
@@ -83,7 +83,7 @@ class PolicyResponse(BaseModel):
 #             policy_text = data["choices"][0]["message"]["content"]
             
 #             return {"status": "success", "policy": policy_text}
-            
+
 #         except httpx.HTTPStatusError as e:
 #             print(f"Groq API Error: {e.response.text}") 
 #             raise HTTPException(
