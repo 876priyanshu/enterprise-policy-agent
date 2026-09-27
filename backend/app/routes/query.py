@@ -6,9 +6,9 @@ from app.services.tools import agent_tools
 from app.services.web_search import perform_web_search
 from app.services.rag import search_internal_docs
 from app.routes.document import QueryRequest, groq_client
-from app.services.security import get_current_user  # Corrected import
-from loguru import logger # <-- Swap standard logging for loguru
-from openai import APIError, APITimeoutError # <-- Import OpenAI exceptions for Groq
+from app.services.security import get_current_user
+from loguru import logger
+from openai import APIError, APITimeoutError
 from fastapi import HTTPException
 from prometheus_client import Counter
 from app.services.tools import agent_tools
@@ -56,7 +56,7 @@ async def query_agent(
         while current_iteration < max_iterations:
             llm_start_time = time.time()
             try:
-                # 1. Call the LLM
+                #  Call the LLM
                 response = groq_client.chat.completions.create(
                     model="llama-3.1-8b-instant",
                     messages=messages,
@@ -87,9 +87,6 @@ async def query_agent(
 
             message = response.choices[0].message
             
-            # ... [Keep your existing tool routing logic exactly the same] ...
-            
-        # ... [Keep your existing fallback logic] ...
 
         logger.info(
             f"Agent finished | Source: {source_used} | "
