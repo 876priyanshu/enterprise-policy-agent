@@ -3,7 +3,6 @@ from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
 import uuid
 
-# IMPORTANT: Adjust this import to match where your SQLAlchemy Base is defined!
 from app.core.database import Base 
 class Conversation(Base):
     __tablename__ = "conversations"
