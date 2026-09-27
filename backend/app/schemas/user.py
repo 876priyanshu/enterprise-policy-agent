@@ -1,15 +1,14 @@
-# backend/app/schemas/user.py
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 from datetime import datetime
 
-# 1. Schema for reading data from the frontend (e.g., Registration)
+#  Schema for reading data from the frontend (e.g., Registration)
 class UserCreate(BaseModel):
     email: EmailStr  # Automatically validates that it's a proper email format
     password: str
     role: Optional[str] = "employee"
 
-# 2. Schema for sending data back to the frontend (Hides password!)
+#  Schema for sending data back to the frontend (Hides password!)
 class UserResponse(BaseModel):
     id: int
     email: EmailStr
