@@ -12,7 +12,7 @@ By leveraging a **Retrieval-Augmented Generation (RAG)** pipeline, this system i
 
 ---
 
-##  Key Features
+##  Key Features   
 
 - ** Intelligent RAG Pipeline**
   - Semantic search using ChromaDB and SentenceTransformers.
