@@ -55,7 +55,7 @@ def run_tests(token: str):
         print("-" * 40)
 
 if __name__ == "__main__":
-    # Set up argument parsing
+    # Argument parsing
     parser = argparse.ArgumentParser(description="Test LLM Routing")
     parser.add_argument("--token", type=str, help="Your JWT Auth Token")
     
